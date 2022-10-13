@@ -4,7 +4,7 @@ from io import BytesIO
 from urllib.parse import urljoin
 
 import httpx
-from nonebot import get_driver, on_command, on_shell_command
+from nonebot import get_driver, on_shell_command
 from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.adapters.onebot.v11.helpers import (
     Cooldown,
@@ -14,7 +14,7 @@ from nonebot.adapters.onebot.v11.helpers import (
 from nonebot.exception import ParserExit
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.params import Arg, CommandArg, ShellCommandArgs
+from nonebot.params import Arg, ShellCommandArgs
 from nonebot.rule import ArgumentParser
 from nonebot.typing import T_State
 from PIL import Image
@@ -48,7 +48,7 @@ novel_parser.add_argument("-n", "--ntags", default="", nargs="*", help="负面�
 
 
 async def get_tags(state: T_State, tags: str = Arg()):
-    state["tags"] = tags
+    state["tags"] = tags.strip()
 
 
 ai_novel = on_shell_command(
@@ -116,20 +116,34 @@ async def novel_draw_handle(state: T_State):
         await ai_novel.send(msg, at_sender=True)
 
 
-ai_image = on_command("以图绘图", aliases={"以图生图", "以图制图"})
+image_parser = ArgumentParser()
+image_parser.add_argument("tags", default="", nargs="*", help="描述标签")
+image_parser.add_argument(
+    "-e", "--strength", type=float, help="允许 AI 改变图像的构成, 降低该值会产生更接近原始图像的效果"
+)
+
+ai_image = on_shell_command(
+    "以图绘图", aliases={"以图生图", "以图作图", "以图制图"}, parser=image_parser
+)
 
 
 @ai_image.handle([cooldown])
 async def image_draw(
-    event: MessageEvent, matcher: Matcher, args: Message = CommandArg()
+    event: MessageEvent,
+    matcher: Matcher,
+    state: T_State,
+    args: Namespace = ShellCommandArgs(),
 ):
     message = reply.message if (reply := event.reply) else event.message
+
+    state["args"] = args
 
     if imgs := message["image"]:
         matcher.set_arg("imgs", Message(imgs))
 
-    if tags := args.extract_plain_text().strip():
-        matcher.set_arg("tags", Message(tags))
+    if args.tags:
+        args.tags = " ".join(args.tags)
+        matcher.set_arg("tags", Message(args.tags))
 
 
 @ai_image.got("imgs", prompt="请发送基准图片")
@@ -161,11 +175,18 @@ ai_image.got("tags", TAGS_PROMPT)(get_tags)
 async def image_draw_handle(state: T_State):
     await ai_novel.send("正在努力绘图中……")
 
+    args = state["args"]
+
     async with httpx.AsyncClient() as client:
         res = await client.post(
             urljoin(api_url, "got_image2image"),
             data=base64.b64encode(state["image_data"].getvalue()),  # type: ignore
-            params={"token": token, "tags": state["tags"], "shape": state["shape"]},
+            params={
+                "token": token,
+                "tags": state["tags"],
+                "shape": state["shape"],
+                "strength": args.strength or 0.6,
+            },
             timeout=60,
         )
         if res.is_error:
