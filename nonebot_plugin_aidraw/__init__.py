@@ -26,6 +26,7 @@ try:
 except ImportError:
     import json
 
+TAGS_PROMPT = "请输入描述性的单词或短句"
 
 plugin_config = Config.parse_obj(get_driver().config)
 
@@ -72,6 +73,7 @@ async def novel_draw(
     for s in shape_list:
         if s.startswith(shape):
             shape = s
+            break
 
     if shape not in shape_list:
         await ai_novel.finish("shape 的输入值不正确, 应为 landscape, portrait 或 square")
@@ -84,7 +86,7 @@ async def novel_draw(
         matcher.set_arg("tags", Message(args.tags))
 
 
-ai_novel.got("tags", prompt="请输入描述性的单词或短句")(get_tags)
+ai_novel.got("tags", TAGS_PROMPT)(get_tags)
 
 
 @ai_novel.handle()
@@ -148,12 +150,11 @@ async def get_image(state: T_State, imgs: Message = Arg()):
         else:
             state["shape"] = "Square"
 
-        base_img.thumbnail((768, 768), resample=Image.Resampling.LANCZOS)
         state["image_data"] = BytesIO()
         base_img.save(state["image_data"], format="JPEG")
 
 
-ai_image.got("tags", prompt="请输入描述性的单词或短句")(get_tags)
+ai_image.got("tags", TAGS_PROMPT)(get_tags)
 
 
 @ai_image.handle()
