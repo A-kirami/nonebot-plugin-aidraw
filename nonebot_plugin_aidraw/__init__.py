@@ -34,6 +34,7 @@ plugin_config = Config.parse_obj(get_driver().config)
 api_url = plugin_config.ai_draw_api
 token = plugin_config.ai_draw_token
 cooldown_time = plugin_config.ai_draw_cooldown
+timeout = plugin_config.ai_draw_timeout
 
 cooldown = Cooldown(
     cooldown=cooldown_time, prompt="AI绘图冷却中……", isolate_level=CooldownIsolateLevel.USER
@@ -102,7 +103,7 @@ async def novel_draw_handle(state: T_State):
             res = await client.get(
                 urljoin(api_url, "got_image"),
                 params={"token": token, **{k: v for k, v in vars(args).items() if v}},
-                timeout=60,
+                timeout=timeout,
             )
     except TimeoutException:
         await ai_novel.finish("绘图请求超时, 请稍后重试")
@@ -193,7 +194,7 @@ async def image_draw_handle(state: T_State):
                     "shape": state["shape"],
                     "strength": args.strength or 0.6,
                 },
-                timeout=60,
+                timeout=timeout,
             )
     except TimeoutException:
         await ai_novel.finish("绘图请求超时, 请稍后重试")
