@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-aidraw"
-version = "0.1.0"
+version = "0.2.0"
 description = "NoneBot2 plugin for use AI to draw image"
 authors = [
     {name = "Akirami", email = "Akiramiaya@outlook.com"},
