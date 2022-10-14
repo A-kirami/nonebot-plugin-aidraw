@@ -4,6 +4,7 @@ from io import BytesIO
 from urllib.parse import urljoin
 
 import httpx
+from httpx import TimeoutException
 from nonebot import get_driver, on_shell_command
 from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.adapters.onebot.v11.helpers import (
@@ -96,24 +97,28 @@ async def novel_draw_handle(state: T_State):
     args = state["args"]
     args.tags = state["tags"]
 
-    async with httpx.AsyncClient() as client:
-        res = await client.get(
-            urljoin(api_url, "got_image"),
-            params={"token": token, **{k: v for k, v in vars(args).items() if v}},
-            timeout=60,
-        )
-        if res.is_error:
-            logger.error(f"{res.url} {res.status_code}")
-            await ai_novel.finish("出现意外的网络错误")
-        info = Image.open(BytesIO(res.content)).info
-        if not info:
-            await ai_novel.finish("token失效, 请更换token后重试")
-        msg = (
-            f"\n图像种子: {json.loads(info['Comment'])['seed']}\n"
-            + f"提示标签: {info['Description']}\n"
-            + MessageSegment.image(res.content)
-        )
-        await ai_novel.send(msg, at_sender=True)
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                urljoin(api_url, "got_image"),
+                params={"token": token, **{k: v for k, v in vars(args).items() if v}},
+                timeout=60,
+            )
+    except TimeoutException:
+        await ai_novel.finish("绘图请求超时, 请稍后重试")
+
+    if res.is_error:
+        logger.error(f"{res.url} {res.status_code}")
+        await ai_novel.finish("出现意外的网络错误")
+    info = Image.open(BytesIO(res.content)).info
+    if not info:
+        await ai_novel.finish("token失效, 请更换token后重试")
+    msg = (
+        f"\n图像种子: {json.loads(info['Comment'])['seed']}\n"
+        + f"提示标签: {info['Description']}\n"
+        + MessageSegment.image(res.content)
+    )
+    await ai_novel.send(msg, at_sender=True)
 
 
 image_parser = ArgumentParser()
@@ -177,20 +182,24 @@ async def image_draw_handle(state: T_State):
 
     args = state["args"]
 
-    async with httpx.AsyncClient() as client:
-        res = await client.post(
-            urljoin(api_url, "got_image2image"),
-            data=base64.b64encode(state["image_data"].getvalue()),  # type: ignore
-            params={
-                "token": token,
-                "tags": state["tags"],
-                "shape": state["shape"],
-                "strength": args.strength or 0.6,
-            },
-            timeout=60,
-        )
-        if res.is_error:
-            logger.error(f"{res.url} {res.status_code}")
-            await ai_novel.finish("出现意外的网络错误")
-        msg = "\n" + MessageSegment.image(res.content)
-        await ai_image.send(msg, at_sender=True)
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                urljoin(api_url, "got_image2image"),
+                data=base64.b64encode(state["image_data"].getvalue()),  # type: ignore
+                params={
+                    "token": token,
+                    "tags": state["tags"],
+                    "shape": state["shape"],
+                    "strength": args.strength or 0.6,
+                },
+                timeout=60,
+            )
+    except TimeoutException:
+        await ai_novel.finish("绘图请求超时, 请稍后重试")
+
+    if res.is_error:
+        logger.error(f"{res.url} {res.status_code}")
+        await ai_novel.finish("出现意外的网络错误")
+    msg = "\n" + MessageSegment.image(res.content)
+    await ai_image.send(msg, at_sender=True)
