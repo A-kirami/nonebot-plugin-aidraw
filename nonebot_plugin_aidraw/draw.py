@@ -22,6 +22,7 @@ from nonebot.typing import T_State
 from PIL import Image
 
 from .config import *
+from .limit import daily_limiter, limiter
 from .manage import group_checker, group_manager, shield_filter, shield_manager
 
 try:
@@ -41,9 +42,9 @@ async def get_tags(state: T_State, tags: str = Arg()):
     state["tags"] = tags
 
 
-async def filter_tags(matcher: Matcher, state: T_State):
+async def filter_tags(event: MessageEvent, matcher: Matcher, state: T_State):
     filter_tags, state["tags"] = shield_filter(state["tags"])
-    msg = "正在努力绘图中……"
+    msg = f"正在努力绘图中……(今日剩余{limiter.last(event.user_id)}次)"
     if filter_tags:
         msg += f"\n已过滤屏蔽词: {filter_tags}"
     await matcher.send(msg, at_sender=True)
@@ -72,7 +73,7 @@ async def _(args: ParserExit = ShellCommandArgs()):
     await ai_novel.finish(args.message)
 
 
-@ai_novel.handle([cooldown])
+@ai_novel.handle([cooldown, daily_limiter()])
 async def novel_draw(
     matcher: Matcher,
     state: T_State,
@@ -134,6 +135,7 @@ async def novel_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
         )
     else:
         await ai_novel.send(msg, at_sender=True)
+    limiter.increase(event.user_id)
 
 
 image_parser = ArgumentParser()
@@ -147,7 +149,7 @@ ai_image = on_shell_command(
 )
 
 
-@ai_image.handle([cooldown])
+@ai_image.handle([cooldown, daily_limiter()])
 async def image_draw(
     event: MessageEvent,
     matcher: Matcher,
@@ -223,3 +225,4 @@ async def image_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
         )
     else:
         await ai_image.send(msg, at_sender=True)
+    limiter.increase(event.user_id)
