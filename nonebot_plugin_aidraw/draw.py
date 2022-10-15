@@ -6,10 +6,11 @@ from urllib.parse import urljoin
 import httpx
 from httpx import TimeoutException
 from nonebot import on_shell_command
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, MessageSegment
 from nonebot.adapters.onebot.v11.helpers import (
     Cooldown,
     CooldownIsolateLevel,
+    autorevoke_send,
     extract_image_urls,
 )
 from nonebot.exception import ParserExit
@@ -62,7 +63,7 @@ ai_novel = on_shell_command(
     aliases={"画画", "画图", "作图", "绘图", "约稿"},
     parser=novel_parser,
     rule=group_checker,
-    handlers=[group_manager, shield_manager],
+    handlers=[shield_manager, group_manager],
 )
 
 
@@ -102,7 +103,7 @@ ai_novel.handle()(filter_tags)
 
 
 @ai_novel.handle()
-async def novel_draw_handle(state: T_State):
+async def novel_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
     args = state["args"]
     args.tags = state["tags"]
 
@@ -127,7 +128,12 @@ async def novel_draw_handle(state: T_State):
         + f"提示标签: {info['Description']}\n"
         + MessageSegment.image(res.content)
     )
-    await ai_novel.send(msg, at_sender=True)
+    if revoke_time:
+        await autorevoke_send(
+            bot, event, msg, revoke_interval=revoke_time, at_sender=True
+        )
+    else:
+        await ai_novel.send(msg, at_sender=True)
 
 
 image_parser = ArgumentParser()
@@ -188,7 +194,7 @@ ai_image.handle()(filter_tags)
 
 
 @ai_image.handle()
-async def image_draw_handle(state: T_State):
+async def image_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
     args = state["args"]
 
     try:
@@ -211,4 +217,9 @@ async def image_draw_handle(state: T_State):
         logger.error(f"{res.url} {res.status_code}")
         await ai_novel.finish("出现意外的网络错误")
     msg = "\n" + MessageSegment.image(res.content)
-    await ai_image.send(msg, at_sender=True)
+    if revoke_time:
+        await autorevoke_send(
+            bot, event, msg, revoke_interval=revoke_time, at_sender=True
+        )
+    else:
+        await ai_image.send(msg, at_sender=True)
