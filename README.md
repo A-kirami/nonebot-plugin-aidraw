@@ -76,7 +76,8 @@ _✨ 使用人工智能来一起画画吧! ✨_
 |:-----:|:----:|:----:|
 | AI_DRAW_API | 否 | 第三方 API 的地址 |
 | AI_DRAW_TOKEN | 是 |  第三方 API 的 token, [点击这里获取](http://91.217.139.190:5010/token) |
-| AI_DRAW_COOLDOWN | 否 |  插件的冷却时间, 默认60秒 |
+| AI_DRAW_COOLDOWN | 否 |  使用后的冷却时间, 默认60秒 |
+| AI_DRAW_DAILY | 否 |  每日使用次数, 默认30次 |
 | AI_DRAW_TIMEOUT | 否 |  请求 API 的超时时间, 默认60秒 |
 | AI_DRAW_REVOKE | 否 | 图片的撤回时间, 默认0秒, 表示不撤回 |
 
