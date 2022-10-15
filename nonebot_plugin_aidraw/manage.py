@@ -77,9 +77,13 @@ async def group_manager(
     elif action in del_word:
         action = "del"
     elif action in see_word:
-        await matcher.finish(
-            f"当前{class_}: {','.join(map(str, getattr(setting, type_)))}"
+        group_list = getattr(setting, type_)
+        msg = (
+            f"当前{class_}: {','.join(map(str, group_list))}"
+            if group_list
+            else f"当前没有{class_}"
         )
+        await matcher.finish(msg)
     elif action in change_word:
         setting.type = type_
         setting.save()
