@@ -1,5 +1,5 @@
 from argparse import Namespace
-from typing import Literal, Set, Tuple, Union
+from typing import List, Literal, Set, Tuple, Union
 
 from nonebot.adapters.onebot.v11 import (
     Bot,
@@ -19,6 +19,10 @@ del_word = {"删除", "移除", "解除"}
 see_word = {"查看", "检查"}
 change_word = {"切换", "管理"}
 shield_word = {"屏蔽词", "过滤词"}
+
+
+def parm_trim(parm: List[str]) -> List[str]:
+    return " ".join(parm).replace("，", ",").split(",")
 
 
 async def group_checker(
@@ -84,7 +88,7 @@ async def group_manager(
         matcher.skip()
 
     groups.insert(0, group)
-    groups = " ".join(groups).split(",")
+    groups = parm_trim(groups)
 
     msg = handle_namelist(
         action, type_, {int(group) for group in groups if group.strip().isdigit()}
@@ -116,7 +120,7 @@ async def shield_manager(
         matcher.skip()
 
     words.insert(0, word)
-    words = " ".join(words).replace("，", ",").split(",")
+    words = parm_trim(words)
 
     if action in add_word:
         setting.shield.update(word.strip() for word in words)
