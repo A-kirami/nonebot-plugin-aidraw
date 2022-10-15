@@ -80,6 +80,7 @@ _✨ 使用人工智能来一起画画吧! ✨_
 | AI_DRAW_DAILY | 否 |  每日使用次数, 默认30次 |
 | AI_DRAW_TIMEOUT | 否 |  请求 API 的超时时间, 默认60秒 |
 | AI_DRAW_REVOKE | 否 | 图片的撤回时间, 默认0秒, 表示不撤回 |
+| AI_DRAW_MESSAGE | 否 | 消息发送方式, 可选 mix(图文混合)、part(图文分离)、image(仅图片), 默认值为 mix |
 
 ## 🎉 使用
 ### 指令表

@@ -1,6 +1,7 @@
 import base64
 from argparse import Namespace
 from io import BytesIO
+from typing import List, Union
 from urllib.parse import urljoin
 
 import httpx
@@ -48,6 +49,23 @@ async def filter_tags(event: MessageEvent, matcher: Matcher, state: T_State):
     if filter_tags:
         msg += f"\n已过滤屏蔽词: {filter_tags}"
     await matcher.send(msg, at_sender=True)
+
+
+async def send_msg(
+    bot: Bot,
+    event: MessageEvent,
+    message: Union[List[Message], Message],
+):
+    if not isinstance(message, list):
+        message = [message]
+    for msg in message:
+        if revoke_time:
+            await autorevoke_send(
+                bot, event, msg, revoke_interval=revoke_time, at_sender=True
+            )
+        else:
+            await bot.send(event, msg, at_sender=True)
+    limiter.increase(event.user_id)
 
 
 novel_parser = ArgumentParser()
@@ -124,18 +142,18 @@ async def novel_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
     info = Image.open(BytesIO(res.content)).info
     if not info:
         await ai_novel.finish("token失效, 请更换token后重试")
-    msg = (
+    image = "\n" + MessageSegment.image(res.content)
+    text = Message(
         f"\n图像种子: {json.loads(info['Comment'])['seed']}\n"
-        + f"提示标签: {info['Description']}\n"
-        + MessageSegment.image(res.content)
+        + f"提示标签: {info['Description']}"
     )
-    if revoke_time:
-        await autorevoke_send(
-            bot, event, msg, revoke_interval=revoke_time, at_sender=True
-        )
+    if message_mode == "image":
+        msg = image
+    elif message_mode == "part":
+        msg = [image, text]
     else:
-        await ai_novel.send(msg, at_sender=True)
-    limiter.increase(event.user_id)
+        msg = image + text
+    await send_msg(bot, event, msg)
 
 
 image_parser = ArgumentParser()
@@ -219,10 +237,4 @@ async def image_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
         logger.error(f"{res.url} {res.status_code}")
         await ai_novel.finish("出现意外的网络错误")
     msg = "\n" + MessageSegment.image(res.content)
-    if revoke_time:
-        await autorevoke_send(
-            bot, event, msg, revoke_interval=revoke_time, at_sender=True
-        )
-    else:
-        await ai_image.send(msg, at_sender=True)
-    limiter.increase(event.user_id)
+    await send_msg(bot, event, msg)
