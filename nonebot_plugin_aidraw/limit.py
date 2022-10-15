@@ -12,7 +12,7 @@ from .config import daily_times
 class DailyLimiter(BaseModel):
     max: int
     day: int = Field(default=0, init=False)
-    count: defaultdict[int, int] = Field(defaultdict(int), init=False)
+    count: defaultdict = Field(defaultdict(int), init=False)
 
     def last(self, key: int) -> int:
         return self.max - self.count[key]
