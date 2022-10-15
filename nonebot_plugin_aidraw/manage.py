@@ -1,9 +1,10 @@
 from argparse import Namespace
-from typing import Literal, Set, Union
+from typing import Literal, Set, Tuple, Union
 
 from nonebot.adapters.onebot.v11 import (
     Bot,
     GroupMessageEvent,
+    Message,
     MessageEvent,
     PrivateMessageEvent,
 )
@@ -17,6 +18,7 @@ add_word = {"添加", "增加", "设置"}
 del_word = {"删除", "移除", "解除"}
 see_word = {"查看", "检查"}
 change_word = {"切换", "管理"}
+shield_word = {"屏蔽词", "过滤词"}
 
 
 async def group_checker(
@@ -58,7 +60,13 @@ async def group_manager(
 
     manage_type, *groups = args.tags
     action, class_, group = manage_type[:2], manage_type[2:5], manage_type[5:]
-    type_ = "blacklist" if class_ == "黑名单" else "whitelist"
+
+    if class_ == "黑名单":
+        type_ = "blacklist"
+    elif class_ == "白名单":
+        type_ = "whitelist"
+    else:
+        matcher.skip()
 
     if action in add_word:
         action = "add"
@@ -82,3 +90,41 @@ async def group_manager(
         action, type_, {int(group) for group in groups if group.strip().isdigit()}
     )
     await matcher.finish(msg)
+
+
+def shield_filter(tags: Message) -> Tuple[str, str]:
+    tag_list = str(tags).lower().replace("，", ",").split(",")
+    tag_set = {tag.strip() for tag in tag_list}
+    filter_tags = ",".join(tag_set & setting.shield)
+    safe_tags = ",".join(tag_set - setting.shield)
+    return filter_tags, safe_tags
+
+
+async def shield_manager(
+    bot: Bot,
+    event: MessageEvent,
+    matcher: Matcher,
+    args: Namespace = ShellCommandArgs(),
+):
+    if not await SUPERUSER(bot, event):
+        matcher.skip()
+
+    manage_type, *words = args.tags
+    action, class_, word = manage_type[:2], manage_type[2:5], manage_type[5:]
+
+    if class_ not in shield_word:
+        matcher.skip()
+
+    words.insert(0, word)
+    words = " ".join(words).replace("，", ",").split(",")
+
+    if action in add_word:
+        setting.shield.update(word.strip() for word in words)
+    elif action in del_word:
+        setting.shield.difference_update(word.strip() for word in words)
+    elif action in see_word:
+        msg = f"当前屏蔽词: {','.join(setting.shield)}" if setting.shield else "当前没有设置屏蔽词"
+        await matcher.finish(msg)
+
+    setting.save()
+    await matcher.finish(f"已{action}屏蔽词: {','.join(words)}")
