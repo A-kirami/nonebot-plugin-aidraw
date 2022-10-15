@@ -16,6 +16,8 @@ class Setting(BaseModel):
     """黑名单"""
     whitelist: Set[int] = Field(default_factory=set)
     """白名单"""
+    shield: Set[str] = Field(default_factory=set)
+    """过滤词"""
 
     __file_path: Path = Path(__file__).parent / "setting.json"
 

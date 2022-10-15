@@ -21,7 +21,7 @@ from nonebot.typing import T_State
 from PIL import Image
 
 from .config import *
-from .manage import group_checker, group_manager
+from .manage import group_checker, group_manager, shield_filter, shield_manager
 
 try:
     import ujson as json
@@ -31,13 +31,22 @@ except ImportError:
 TAGS_PROMPT = "请输入描述性的单词或短句"
 
 
+cooldown = Cooldown(
+    cooldown=cooldown_time, prompt="AI绘图冷却中……", isolate_level=CooldownIsolateLevel.USER
+)
+
+
 async def get_tags(state: T_State, tags: str = Arg()):
     state["tags"] = tags
 
 
-cooldown = Cooldown(
-    cooldown=cooldown_time, prompt="AI绘图冷却中……", isolate_level=CooldownIsolateLevel.USER
-)
+async def filter_tags(matcher: Matcher, state: T_State):
+    filter_tags, state["tags"] = shield_filter(state["tags"])
+    msg = "正在努力绘图中……"
+    if filter_tags:
+        msg += f"\n已过滤屏蔽词: {filter_tags}"
+    await matcher.send(msg, at_sender=True)
+
 
 novel_parser = ArgumentParser()
 novel_parser.add_argument("tags", default="", nargs="*", help="描述标签")
@@ -53,7 +62,7 @@ ai_novel = on_shell_command(
     aliases={"画画", "画图", "作图", "绘图", "约稿"},
     parser=novel_parser,
     rule=group_checker,
-    handlers=[group_manager],
+    handlers=[group_manager, shield_manager],
 )
 
 
@@ -89,11 +98,11 @@ async def novel_draw(
 
 ai_novel.got("tags", TAGS_PROMPT)(get_tags)
 
+ai_novel.handle()(filter_tags)
+
 
 @ai_novel.handle()
 async def novel_draw_handle(state: T_State):
-    await ai_novel.send("正在努力绘图中……")
-
     args = state["args"]
     args.tags = state["tags"]
 
@@ -175,11 +184,11 @@ async def get_image(state: T_State, imgs: Message = Arg()):
 
 ai_image.got("tags", TAGS_PROMPT)(get_tags)
 
+ai_image.handle()(filter_tags)
+
 
 @ai_image.handle()
 async def image_draw_handle(state: T_State):
-    await ai_novel.send("正在努力绘图中……")
-
     args = state["args"]
 
     try:
