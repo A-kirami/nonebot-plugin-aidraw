@@ -20,7 +20,7 @@ from nonebot.rule import ArgumentParser
 from nonebot.typing import T_State
 from PIL import Image
 
-from .config import Config
+from .config import *
 
 try:
     import ujson as json
@@ -30,11 +30,6 @@ except ImportError:
 TAGS_PROMPT = "请输入描述性的单词或短句"
 
 plugin_config = Config.parse_obj(get_driver().config)
-
-api_url = plugin_config.ai_draw_api
-token = plugin_config.ai_draw_token
-cooldown_time = plugin_config.ai_draw_cooldown
-timeout = plugin_config.ai_draw_timeout
 
 cooldown = Cooldown(
     cooldown=cooldown_time, prompt="AI绘图冷却中……", isolate_level=CooldownIsolateLevel.USER
