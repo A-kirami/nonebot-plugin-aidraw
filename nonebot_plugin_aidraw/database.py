@@ -9,6 +9,8 @@ from tortoise import Tortoise, fields
 from tortoise.models import Model
 from tortoise.queryset import QuerySet
 
+from .config import data_path
+
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -25,7 +27,7 @@ class Setting(BaseModel):
     shield: Set[str] = Field(default_factory=set)
     """过滤词"""
 
-    __file_path: Path = Path(__file__).parent / "setting.json"
+    __file_path: Path = data_path / "setting.json"
 
     @property
     def file_path(self) -> Path:
@@ -84,8 +86,8 @@ driver = get_driver()
 async def init():
     import sys
 
-    sqlite_file_name = Path(__file__).parent / "aidraw.db"
-    sqlite_url = f"sqlite:///{sqlite_file_name}"
+    sqlite_file_name = data_path / "aidraw.db"
+    sqlite_url = f"sqlite:///{sqlite_file_name.resolve()}"
 
     await Tortoise.init(
         db_url=sqlite_url,
