@@ -56,7 +56,7 @@ async def send_msg(
     event: MessageEvent,
     message: Union[List[Message], Message],
 ):
-    if not isinstance(message, list):
+    if isinstance(message, Message):
         message = [message]
     for msg in message:
         if revoke_time:
