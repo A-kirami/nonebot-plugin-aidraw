@@ -1,7 +1,13 @@
+import re
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Literal, Set
 
+from nonebot import get_driver
 from pydantic import BaseModel, Field, root_validator
+from tortoise import Tortoise, fields
+from tortoise.models import Model
+from tortoise.queryset import QuerySet
 
 try:
     import ujson as json
@@ -36,3 +42,53 @@ class Setting(BaseModel):
 
 
 setting = Setting()
+
+
+class DrawCount(Model):
+    uid: int = fields.IntField(pk=True)
+    """用户QQ"""
+    gid: int = fields.IntField(unique=True, index=True)
+    """群号"""
+    count: Dict[str, int] = fields.JSONField(default=dict)
+    """计数字典"""
+
+    @classmethod
+    async def count_tags(cls, uid: int, gid: int, tags: str) -> None:
+        tag = re.sub(r"[{[\]}]", "", tags)
+        tag_count = Counter(tag.split(","))
+        counter, _ = await cls.get_or_create(uid=uid, gid=gid)
+        counter.count = dict(Counter(counter.count) + Counter(tag_count))
+        await counter.save()
+
+    @classmethod
+    async def _get_count(cls, queryset: QuerySet) -> Counter:
+        counts = queryset.values_list("count", flat=True)
+        counter = Counter()
+        async for count in counts:
+            counter += Counter(count)
+        return counter
+
+    @classmethod
+    async def get_user_count(cls, uid: int) -> Counter:
+        return await cls._get_count(cls.filter(uid=uid))
+
+    @classmethod
+    async def get_group_count(cls, gid: int) -> Counter:
+        return await cls._get_count(cls.filter(gid=gid))
+
+
+driver = get_driver()
+
+
+@driver.on_startup
+async def init():
+    import sys
+
+    sqlite_file_name = Path(__file__).parent / "aidraw.db"
+    sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+    await Tortoise.init(
+        db_url=sqlite_url,
+        modules={"models": [sys.modules[__name__]]},
+    )
+    await Tortoise.generate_schemas()

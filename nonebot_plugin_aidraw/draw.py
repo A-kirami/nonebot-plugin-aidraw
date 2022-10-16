@@ -7,7 +7,13 @@ from urllib.parse import urljoin
 import httpx
 from httpx import TimeoutException
 from nonebot import on_shell_command
-from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import (
+    Bot,
+    GroupMessageEvent,
+    Message,
+    MessageEvent,
+    MessageSegment,
+)
 from nonebot.adapters.onebot.v11.helpers import (
     Cooldown,
     CooldownIsolateLevel,
@@ -23,6 +29,7 @@ from nonebot.typing import T_State
 from PIL import Image
 
 from .config import *
+from .database import DrawCount
 from .limit import daily_limiter, limiter
 from .manage import group_checker, group_manager, shield_filter, shield_manager
 
@@ -49,6 +56,14 @@ async def filter_tags(event: MessageEvent, matcher: Matcher, state: T_State):
     if filter_tags:
         msg += f"\n已过滤屏蔽词: {filter_tags}"
     await matcher.send(msg, at_sender=True)
+
+
+async def count_tags(event: MessageEvent, state: T_State):
+    await DrawCount.count_tags(
+        event.user_id,
+        event.group_id if isinstance(event, GroupMessageEvent) else 0,
+        state["tags"],
+    )
 
 
 async def send_msg(
@@ -119,6 +134,8 @@ async def novel_draw(
 ai_novel.got("tags", TAGS_PROMPT)(get_tags)
 
 ai_novel.handle()(filter_tags)
+
+ai_novel.handle()(count_tags)
 
 
 @ai_novel.handle()
@@ -211,6 +228,8 @@ async def get_image(state: T_State, imgs: Message = Arg()):
 ai_image.got("tags", TAGS_PROMPT)(get_tags)
 
 ai_image.handle()(filter_tags)
+
+ai_image.handle()(count_tags)
 
 
 @ai_image.handle()
