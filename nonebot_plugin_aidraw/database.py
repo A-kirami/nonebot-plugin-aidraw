@@ -47,9 +47,9 @@ setting = Setting()
 
 
 class DrawCount(Model):
-    uid: int = fields.IntField(pk=True)
+    uid: int = fields.IntField(index=True)
     """用户QQ"""
-    gid: int = fields.IntField(unique=True, index=True)
+    gid: int = fields.IntField(index=True)
     """群号"""
     count: Dict[str, int] = fields.JSONField(default=dict)
     """计数字典"""
@@ -86,7 +86,7 @@ driver = get_driver()
 async def init():
     import sys
 
-    sqlite_file_name = data_path / "aidraw.db"
+    sqlite_file_name = data_path / "aidraw.sqlite"
     sqlite_url = f"sqlite:///{sqlite_file_name.resolve()}"
 
     await Tortoise.init(
