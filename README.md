@@ -104,7 +104,7 @@ _✨ 使用人工智能来一起画画吧! ✨_
 ### 文本生成参数
 | 参数名 | 简写 | 全写 | 默认值 | 说明 |
 |:-----:|:----:|:----:|:----:|:----:|
-| shape |  -p | --shape | Portrait | 可选 Portrait(纵向)、Landscape(横向)、Square(方形)<br>支持缩写为 p、l、s |
+| shape |  -p | --shape | Portrait | 图像的形状, 可选 Portrait(纵向)、Landscape(横向)、Square(方形)<br>支持缩写为 p、l、s |
 | scale | -c | --scale | 11 | 指示 AI 对提示的遵守程度，较大的值可以帮助 AI 更接近文本提示的整体意图 |
 | seed | -s | --seed | 随机 | 随机种子。在其他条件不变的情况下，相同的种子代表生成相同的图 |
 | steps | -t | --steps | 28  | 定义 AI 从最初创建时应优化的迭代次数 |
