@@ -26,7 +26,7 @@ from nonebot.matcher import Matcher
 from nonebot.params import Arg, ShellCommandArgs
 from nonebot.rule import ArgumentParser
 from nonebot.typing import T_State
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from .config import *
 from .database import DrawCount
@@ -156,7 +156,10 @@ async def novel_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
     if res.is_error:
         logger.error(f"{res.url} {res.status_code}")
         await ai_novel.finish("出现意外的网络错误")
-    info = Image.open(BytesIO(res.content)).info
+    try:
+        info = Image.open(BytesIO(res.content)).info
+    except UnidentifiedImageError:
+        await ai_novel.finish("API 返回图像异常, 请稍后重试")
     if not info:
         await ai_novel.finish("token失效, 请更换token后重试")
     image = "\n" + MessageSegment.image(res.content)
