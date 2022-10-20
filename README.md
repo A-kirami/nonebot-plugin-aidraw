@@ -83,6 +83,7 @@ _✨ 使用人工智能来一起画画吧! ✨_
 | AI_DRAW_MESSAGE | 否 | mix | 消息发送方式<br>可选 mix(图文混合)、part(图文分离)、image(仅图片) |
 | AI_DRAW_RANK | 否 | 10 | 标签统计排行的最大显示数量, 设置为0表示显示全部, 单位: 位 |
 | AI_DRAW_DATA | 否 | 自身目录 | 插件保存数据文件夹的路径 |
+| AI_DRAW_TEXT | 否 | \n图像种子: {seed}\n提示标签: {tags} | 文本消息模板, 支持参数有: <br>tags(标签), steps(迭代步数), seed(图像种子), strength(强度), scale(自由度), ntags(负面标签), 参数需以{}包裹 |
 
 ## 🎉 使用
 ### 指令表
