@@ -163,9 +163,18 @@ async def novel_draw_handle(bot: Bot, event: MessageEvent, state: T_State):
     if not info:
         await ai_novel.finish("token失效, 请更换token后重试")
     image = "\n" + MessageSegment.image(res.content)
+    comment = json.loads(info["Comment"])
     text = Message(
-        f"\n图像种子: {json.loads(info['Comment'])['seed']}\n"
-        + f"提示标签: {info['Description']}"
+        text_templet.format(
+            **{
+                "tags": info["Description"],
+                "steps": comment["steps"],
+                "seed": comment["seed"],
+                "strength": comment["strength"],
+                "scale": comment["scale"],
+                "ntags": comment["uc"],
+            }
+        )
     )
     if message_mode == "image":
         msg = image
