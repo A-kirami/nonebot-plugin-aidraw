@@ -59,11 +59,12 @@ async def filter_tags(event: MessageEvent, matcher: Matcher, state: T_State):
 
 
 async def count_tags(event: MessageEvent, state: T_State):
-    await DrawCount.count_tags(
-        event.user_id,
-        event.group_id if isinstance(event, GroupMessageEvent) else 0,
-        state["tags"],
-    )
+    if enable_database:
+        await DrawCount.count_tags(
+            event.user_id,
+            event.group_id if isinstance(event, GroupMessageEvent) else 0,
+            state["tags"],
+        )
 
 
 async def send_msg(
