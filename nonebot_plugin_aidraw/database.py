@@ -92,3 +92,8 @@ async def init():
         modules={"models": [__name__]},
     )
     await Tortoise.generate_schemas()
+
+
+@driver.on_shutdown
+async def finish():
+    await Tortoise.close_connections()
