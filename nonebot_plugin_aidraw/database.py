@@ -85,12 +85,23 @@ driver = get_driver()
 @driver.on_startup
 async def init():
     sqlite_path = data_path / "aidraw.sqlite"
-    sqlite_url = f"sqlite:///{sqlite_path.resolve()}"
 
-    await Tortoise.init(
-        db_url=sqlite_url,
-        modules={"models": [__name__]},
-    )
+    config = {
+        "connections": {
+            "aidraw": {
+                "engine": "tortoise.backends.sqlite",
+                "credentials": {"file_path": sqlite_path},
+            },
+        },
+        "apps": {
+            "aidraw": {
+                "models": [__name__],
+                "default_connection": "aidraw",
+            }
+        },
+    }
+
+    await Tortoise.init(config)
     await Tortoise.generate_schemas()
 
 
