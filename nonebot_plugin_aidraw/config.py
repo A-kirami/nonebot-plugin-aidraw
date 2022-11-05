@@ -39,5 +39,5 @@ data_path = plugin_config.ai_draw_data / "data"
 data_path.mkdir(parents=True, exist_ok=True)
 save_path = plugin_config.ai_draw_data / "save"
 save_path.mkdir(parents=True, exist_ok=True)
-text_templet = plugin_config.ai_draw_text
+text_templet = plugin_config.ai_draw_text.replace("\\\\", "\\")
 enable_database = plugin_config.ai_draw_database
